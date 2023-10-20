@@ -1,0 +1,105 @@
+import random 
+import pygame
+from pygame import mixer
+pygame.init()
+
+screen = pygame.display.set_mode((640,620))
+pygame.display.set_caption("Stingray Jumper")
+
+doExit=False
+clock = pygame.time.Clock()
+
+p1x=20
+p1y=450
+life=3
+yVel = 0 
+score = 0
+vy = 0
+ticker = 0
+touchGround = False 
+coralHeights= [12,10,8,4,2]
+
+coralXpos=[]
+
+for x in range(1, 5):
+    coralXpos.append(random.randrange(200, 3000))
+    
+coralImg = pygame.transform.scale(pygame.image.load('coral.png'), (100,100))
+Stingray = pygame.transform.scale(pygame.image.load('stingray.png'), (100,100))
+
+mixer.init()
+splash = pygame.mixer.Sound("splash.mp3")
+
+#game loop-----------------------------------------------
+while not doExit:
+    #timer section
+    clock.tick(60)
+    score+=1
+    print("score:", score)
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            doExit = True
+    #update coral location if they're off the screen 
+    for x in range(len(coralXpos)):
+        if coralXpos[x]<0:
+            coralXpos[x]=random.randrange(640,5000)
+            print("Reset to ", coralXpos[x])
+            
+    #check for player hitting coral 
+    for x, y in zip(coralXpos, coralHeights):
+        a = pygame.Rect((x, 480-y), (100, 100))
+        b = pygame.Rect((p1x, p1y), (100, 100))
+        if a.colliderect(b) == True:
+            print("you hit the coral!")
+            pygame.mixer.Sound.play(splash)
+            life -= 1
+            coralXpos.clear()
+            for x in range(1, 5):
+                coralXpos.append(random.randrange(200, 3000))
+
+    #moves coral
+    coralXpos = [x - 5 for x in coralXpos]
+    #update position by adding velocity to position 
+    p1y += yVel
+
+    #turn off flying 
+    if (p1y+30) == 480:
+        touchGround = True
+    else:
+        touchGround = False
+
+    #gravity 
+    if (p1y+30) < 480:
+        p1y+1
+        touchGround = False
+    if touchGround == False:
+        yVel += 1
+    else: 
+        yVel = 0
+        
+    #end of game
+    if life <= 0:
+        doExit = True
+        
+    #input section
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_SPACE] and touchGround == True:
+        yVel -= 25
+        touchGround = False        
+
+    #render section
+    screen.fill((13, 68, 122))
+    screen.blit(Stingray, (p1x, p1y))
+    font = pygame.font.Font(None, 74)
+    text = font.render(str(score), 1, (114, 169, 224))
+    screen.blit(text, (10,10))
+    text = font.render(str(life), 1, (114, 169, 224))
+    screen.blit(text, (580,10))
+    #draws catuses 
+    for x, y in zip(coralXpos, coralHeights):
+        screen.blit(coralImg, (x-15,480-y))
+    pygame.display.flip()
+    
+#end of game loop------------------------
+pygame.quit()
